@@ -1,0 +1,49 @@
+# macOS
+.DS_Store
+Thumbs.db
+
+# Python bytecode / build artifacts (match anywhere)
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# Virtual envs — anchored to repo root only (don't match arbitrary `env/` or `venv/`
+# directories deep inside vendored repos like alphagen/rl/env/)
+/.venv/
+/venv/
+/venvs/
+/env/
+
+# Editor / tooling
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Top-level build dirs (anchored)
+/build/
+/dist/
+
+# Qlib local artifacts inside the vendored qlib clone (regenerable; real data
+# lives at ~/.qlib/ outside the repo per CLAUDE.md)
+mlruns/
+qlib/pyqlib.egg-info/
+qlib/build/
+
+# Project-local data (anchored — real data lives at ~/AutoLLM_data/ per CLAUDE.md).
+# NOT a wildcard — leaves `alphagen/data/`, `data_fetcher/`, etc. alone.
+/data/
+
+# Data file blobs at the repo root (not used today; defensive). Test fixtures are
+# whitelisted explicitly so the bundled 5-symbol/100-day parquet still ships.
+/*.parquet
+/*.bin
+!data_fetcher/tests/fixtures/**/*.parquet
