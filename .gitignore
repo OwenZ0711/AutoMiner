@@ -41,6 +41,7 @@ qlib/build/
 # Project-local data (anchored — real data lives at ~/AutoLLM_data/ per CLAUDE.md).
 # NOT a wildcard — leaves `alphagen/data/`, `data_fetcher/`, etc. alone.
 /data/
+/results/
 
 # Data file blobs at the repo root (not used today; defensive). Test fixtures are
 # whitelisted explicitly so the bundled 5-symbol/100-day parquet still ships.
