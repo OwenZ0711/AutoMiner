@@ -1,0 +1,10 @@
+# Futures GP-CTA pipeline (see gp_cta/proposal.md). Install into ~/venvs/autollm311.
+loguru==0.7.3
+numpy==2.4.4
+pandas==3.0.2
+polars==1.40.1
+pyarrow==24.0.0
+pytest==9.0.3
+psutil==7.2.2
+PyYAML==6.0.3
+numba==0.66.0

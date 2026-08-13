@@ -1,0 +1,45 @@
+# Family A: pre-registered economic-prior lead-lag pairs (BH at q=0.05).
+# Both directions of every listed pair are registered. Everything else scanned
+# falls into family B (BY at q=0.10). Declared UP FRONT — never edited after a
+# scan has run against this file's config_hash (append a new version instead).
+#
+# Economic rationale per block: supply chains (iron ore -> rebar/hot coil,
+# coking coal -> coke, oil -> PX/PTA chain, soybean -> meal/oil), substitution
+# (plastics, rubbers), cross-market twins (SHFE CU vs INE BC), macro blocks
+# (index futures, precious metals).
+version: 1
+pairs:
+  # black chain
+  - [I, RB]
+  - [I, HC]
+  - [J, RB]
+  - [JM, J]
+  - [RB, HC]
+  # energy / oil chain
+  - [SC, FU]
+  - [SC, BU]
+  - [SC, TA]
+  - [TA, PF]
+  - [MA, PP]
+  # plastics substitution
+  - [L, PP]
+  - [PP, V]
+  - [L, V]
+  # oilseed complex
+  - [M, RM]
+  - [Y, P]
+  - [OI, Y]
+  - [A, M]
+  # metals
+  - [CU, ZN]
+  - [CU, AL]
+  - [CU, BC]
+  - [AU, AG]
+  # index futures / macro
+  - [IF, IH]
+  - [IF, IC]
+  - [IF, CU]
+  # rubbers
+  - [RU, NR]
+  # new-energy chain
+  - [LC, SI]

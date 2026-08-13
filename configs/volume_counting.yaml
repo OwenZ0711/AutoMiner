@@ -1,0 +1,16 @@
+# Volume/OI counting-convention break (trap 6): SHFE/DCE/CZCE switched
+# double-sided -> single-sided counting around 2020-01; CFFEX was always
+# single-sided; INE/GFEX listed after the convention settled.
+# Verified empirically by the universe stage (ratio check in [0.35, 0.65]).
+version: 1
+default_break_date: 2020-01-01
+exchanges:
+  SHFE:  {break_date: 2020-01-01, side_before: double, side_after: single}
+  DCE:   {break_date: 2020-01-01, side_before: double, side_after: single}
+  CZCE:  {break_date: 2020-01-01, side_before: double, side_after: single}
+  INE:   {break_date: null,       side_before: single, side_after: single}
+  CFFEX: {break_date: null,       side_before: single, side_after: single}
+  GFEX:  {break_date: null,       side_before: single, side_after: single}
+verify:
+  window_days: 60
+  confirm_ratio: [0.35, 0.65]

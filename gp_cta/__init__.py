@@ -1,21 +1,8 @@
-"""Genetic-programming CTA baseline.
+"""Mining band: lead-lag detection (leadlag/) + warm-start GP (gp/).
 
-This package is intentionally small: it is a runnable baseline/demo that
-reuses the repo's data layer without changing Pipeline A's STL+MCTS plan.
+Consumes the data band's panel artifacts under ``~/AutoLLM_data/futures/``
+exclusively through :mod:`gp_cta.panel_io` — the bands share disk contracts,
+never imports. Spec: ``gp_cta/proposal.md``; math: ``docs/LEADLAG_DESIGN.md``.
 """
 
-from gp_cta.backtest import BacktestConfig, BacktestReport, run_long_flat_backtest
-from gp_cta.evaluator import EvaluationConfig, FormulaEvaluator
-from gp_cta.expressions import Expr
-from gp_cta.gp import GPConfig, GPEngine
-
-__all__ = [
-    "BacktestConfig",
-    "BacktestReport",
-    "EvaluationConfig",
-    "Expr",
-    "FormulaEvaluator",
-    "GPConfig",
-    "GPEngine",
-    "run_long_flat_backtest",
-]
+__version__ = "0.1.0"

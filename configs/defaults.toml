@@ -1,0 +1,40 @@
+# Shared pipeline defaults. Loaded by futures_common.config.load_defaults().
+# Unknown keys are errors.
+
+[project]
+seed = 42
+timezone = "Asia/Shanghai"
+
+[memory]
+default_budget_gb = 4.0
+kill_factor = 1.25          # umbrella watchdog kills a child at budget * kill_factor
+
+[memory.stage_budget_gb]
+ingest = 1.0
+calendar = 1.5
+continuous = 1.5
+universe = 0.5
+panel = 4.0
+features = 2.0
+scan = 2.0
+validate = 2.0
+mine = 3.0
+
+# THE acceptance slice (proposal build-order checks 1-6)
+[slices.acceptance]
+products = ["RB", "I", "TA"]
+start = "2019-01-01"
+end = "2021-12-31"
+
+# Development universe: ~10 liquid products x full modern history.
+# Candidate list is in configs/universe.yaml; this pins the working default.
+[slices.dev10]
+products = ["RB", "HC", "I", "CU", "AU", "AG", "TA", "MA", "M", "SC"]
+start = "2016-01-01"
+end = "2026-02-28"
+
+# Proposal-pinned date splits. Holdout is scored exactly once per mining round.
+[splits]
+train = ["2016-01-01", "2022-12-31"]
+validation = ["2023-01-01", "2024-06-30"]
+holdout = ["2024-07-01", "2026-02-28"]

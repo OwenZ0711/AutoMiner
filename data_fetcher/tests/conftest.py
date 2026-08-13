@@ -1,160 +1,103 @@
-"""Shared pytest fixtures for data_fetcher.tests.
+"""Shared fixtures: synthetic raw trees in BOTH layouts + marker gating.
 
-The strategy from the plan:
-  * Offline tests run against tiny in-repo fixtures.
-  * Network tests are gated behind `--network` and skipped by default.
-  * Big multi-MB fixtures (the 5-symbol Phase-1 OHLCV cache) are produced
-    by the network smoke step at the end of Phase 1, not committed eagerly.
+`make_raw_tree` writes hand-built CSVs from a declarative bar spec so every
+trap has a pinned, readable fixture. Real-data tests are gated behind the
+`realdata` marker and the --realdata flag (they need Future_minute_data/).
 """
 
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 
-import pandas as pd
-import polars as pl
 import pytest
 
-
-def pytest_addoption(parser: pytest.Parser) -> None:
-    parser.addoption(
-        "--network",
-        action="store_true",
-        default=False,
-        help="Run tests that hit AKshare upstream (slow, flaky in CI).",
-    )
+HEADER_12 = "exchange,symbol,open,close,high,low,amount,volume,position,bob,eob,type"
+HEADER_13 = HEADER_12 + ",sequence"
 
 
-def pytest_collection_modifyitems(
-    config: pytest.Config, items: list[pytest.Item]
-) -> None:
-    if config.getoption("--network"):
-        return
-    skip = pytest.mark.skip(reason="needs --network flag")
-    for item in items:
-        if "network" in item.keywords:
-            item.add_marker(skip)
+@dataclass(slots=True)
+class Bar:
+    """One raw CSV row. Times are naive local (Asia/Shanghai)."""
+
+    bob: dt.datetime
+    open: float = 100.0
+    close: float = 100.0
+    high: float = 100.0
+    low: float = 100.0
+    volume: float = 10.0
+    amount: float | None = None  # default: volume * close * 10 (multiplier 10)
+    position: float = 1000.0
+    nan_row: bool = False  # emit a literal-"nan" row (trap 5)
+
+    def row(self, exchange: str, symbol: str, extra_sequence: bool) -> str:
+        if self.nan_row:
+            base = f"{exchange},{symbol}," + ",".join(["nan"] * 10)
+            return base + ",nan" if extra_sequence else base
+        eob = self.bob + dt.timedelta(minutes=1)
+        amount = self.amount if self.amount is not None else self.volume * self.close * 10
+        base = (
+            f"{exchange},{symbol},{self.open},{self.close},{self.high},{self.low},"
+            f"{amount},{self.volume},{self.position},"
+            f"{self.bob:%Y-%m-%d %H:%M:%S}+08:00,{eob:%Y-%m-%d %H:%M:%S}+08:00,14"
+        )
+        return base + ",2" if extra_sequence else base
 
 
-def pytest_configure(config: pytest.Config) -> None:
-    config.addinivalue_line(
-        "markers", "network: test makes a real upstream call (AKshare); needs --network"
-    )
+@dataclass(slots=True)
+class ContractSpec:
+    exchange: str  # "SHFE"
+    symbol: str  # "RB2001" — case as it should appear IN the file
+    bars: Sequence[Bar] = field(default_factory=list)
 
 
-# ---------- Fixture builders ----------
+def write_historical_tree(root: Path, contracts: Sequence[ContractSpec]) -> Path:
+    """`root/2005-202506/EXCH/PROD/CONTRACT.csv` — 12 cols, uppercase names."""
+    tree = root / "2005-202506"
+    for c in contracts:
+        symbol_upper = c.symbol.upper()
+        product = "".join(ch for ch in symbol_upper if ch.isalpha())
+        path = tree / c.exchange / product / f"{symbol_upper}.csv"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        lines = [HEADER_12] + [b.row(c.exchange, symbol_upper, False) for b in c.bars]
+        path.write_text("\n".join(lines) + "\n")
+    return tree
 
-FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
+def write_daily_tree(root: Path, contracts: Sequence[ContractSpec]) -> Path:
+    """`root/2026/YYYYMM/YYYYMMDD/<symbol>.csv` — 13 cols, calendar-day keyed.
 
-@pytest.fixture(scope="session")
-def fixtures_dir() -> Path:
-    FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
-    return FIXTURES_DIR
-
-
-@pytest.fixture(scope="session")
-def trade_calendar_fixture(fixtures_dir: Path) -> pd.DatetimeIndex:
-    """A small synthetic trading calendar covering 2023-01-01..2024-12-31 weekdays
-    minus a hand-picked set of CN public-holiday dates.
-
-    Uses a parquet cache so consecutive test sessions skip the build step.
+    Bars land in the folder of their bob CALENDAR date (that is the trap:
+    post-midnight night bars sit in the next day's folder).
     """
-    path = fixtures_dir / "trade_calendar_2023_2024.parquet"
-    if path.exists():
-        df = pl.read_parquet(path)
-        return pd.DatetimeIndex(df["trade_date"].to_pandas()).normalize()
-
-    weekdays = pd.bdate_range("2023-01-01", "2024-12-31")
-    # Hand-picked CN holidays (Chinese New Year, Qingming, Labor Day, etc.).
-    holidays = pd.to_datetime(
-        [
-            "2023-01-02",  # New Year observed
-            "2023-01-23", "2023-01-24", "2023-01-25", "2023-01-26", "2023-01-27",
-            "2023-04-05",  # Qingming
-            "2023-05-01", "2023-05-02", "2023-05-03",  # Labor
-            "2023-06-22", "2023-06-23",  # Dragon Boat
-            "2023-09-29",  # Mid-Autumn
-            "2023-10-02", "2023-10-03", "2023-10-04", "2023-10-05", "2023-10-06",
-            "2024-01-01",
-            "2024-02-12", "2024-02-13", "2024-02-14", "2024-02-15", "2024-02-16",
-            "2024-04-04", "2024-04-05",
-            "2024-05-01", "2024-05-02", "2024-05-03",
-            "2024-06-10",
-            "2024-09-16", "2024-09-17",
-            "2024-10-01", "2024-10-02", "2024-10-03", "2024-10-04", "2024-10-07",
-        ]
-    )
-    cal = weekdays.difference(holidays)
-    dates = [d.date() for d in cal]
-    pl.DataFrame({"trade_date": dates}, schema={"trade_date": pl.Date}).write_parquet(
-        path
-    )
-    return pd.DatetimeIndex(cal).normalize()
+    tree = root / "2026"
+    by_day: dict[tuple[str, dt.date], list[str]] = {}
+    meta: dict[str, str] = {}
+    for c in contracts:
+        meta[c.symbol] = c.exchange
+        for b in c.bars:
+            key = (c.symbol, b.bob.date())
+            # symbol INSIDE 2026 files matches the filename case
+            by_day.setdefault(key, []).append(b.row(c.exchange, c.symbol, True))
+    for (symbol, day), rows in sorted(by_day.items()):
+        path = tree / f"{day:%Y%m}" / f"{day:%Y%m%d}" / f"{symbol}.csv"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join([HEADER_13, *rows]) + "\n")
+    return tree
 
 
-@pytest.fixture(scope="session")
-def csi300_event_log_fixture(fixtures_dir: Path) -> pl.DataFrame:
-    """A tiny synthetic CSI 300 add/drop event log — 8 rows covering edge cases:
-    members from inception, members joined and never left, members joined and left,
-    a same-day swap pair around a rebalance.
-    """
-    path = fixtures_dir / "csi300_event_log_synthetic.parquet"
-    if path.exists():
-        return pl.read_parquet(path)
-
-    rows = [
-        # stock_code, in_date, out_date (None = still in)
-        ("600000", dt.date(2018, 1, 1), None),                  # joined pre-window, still in
-        ("600519", dt.date(2018, 1, 1), None),                  # joined pre-window, still in
-        ("000001", dt.date(2018, 1, 1), dt.date(2024, 6, 14)),  # joined pre-window, left mid-window
-        ("300750", dt.date(2018, 12, 14), None),                # joined Dec 2018 rebalance
-        ("688981", dt.date(2020, 7, 13), None),                 # joined post-2018 (STAR)
-        ("000333", dt.date(2019, 6, 17), dt.date(2022, 12, 12)), # in then out
-        ("002594", dt.date(2021, 6, 15), None),                  # CATL in
-        ("601398", dt.date(2018, 1, 1), dt.date(2018, 1, 2)),    # same-day-ish drop
-    ]
-    df = pl.DataFrame(
-        rows,
-        schema=["stock_code", "in_date", "out_date"],
-        orient="row",
-    )
-    df.write_parquet(path)
-    return df
+def day_session_bars(
+    day: dt.date, *, n: int = 5, start_hm: tuple[int, int] = (9, 0), **kw: object
+) -> list[Bar]:
+    """n consecutive 1-minute day-session bars starting at start_hm."""
+    t0 = dt.datetime.combine(day, dt.time(*start_hm))
+    return [Bar(bob=t0 + dt.timedelta(minutes=i), **kw) for i in range(n)]  # type: ignore[arg-type]
 
 
-@pytest.fixture
-def tmp_data_root(tmp_path: Path) -> Path:
-    """Per-test tmp dir that mimics ~/AutoLLM_data/ structure."""
-    root = tmp_path / "AutoLLM_data"
-    (root / "raw").mkdir(parents=True)
-    (root / "universe").mkdir(parents=True)
-    (root / "calendar").mkdir(parents=True)
-    return root
+@pytest.fixture()
+def tmp_paths(tmp_path: Path):  # type: ignore[no-untyped-def]
+    from futures_common.paths import FuturesPaths
 
-
-@pytest.fixture(scope="session")
-def synthetic_ohlcv_panel() -> pl.DataFrame:
-    """A 30-day synthetic OHLCV panel for 2 symbols, used by storage tests."""
-    dates = pd.bdate_range("2024-01-02", periods=30).date
-    rows = []
-    for sym in ("SH600519", "SZ000001"):
-        for i, d in enumerate(dates):
-            base = 100.0 + (i * 0.5 if sym == "SH600519" else i * 0.2)
-            rows.append(
-                {
-                    "date": d,
-                    "symbol": sym,
-                    "open": base,
-                    "high": base + 1.0,
-                    "low": base - 1.0,
-                    "close": base + 0.3,
-                    "volume": 1_000_000.0 + i * 1_000,
-                    "turnover": (base + 0.3) * (1_000_000.0 + i * 1_000),
-                    "vwap": base + 0.2,
-                    "return_pct": 0.3,
-                    "turnover_rate": 0.5,
-                }
-            )
-    return pl.DataFrame(rows)
+    return FuturesPaths(data_root=tmp_path / "data", results_root=tmp_path / "results")

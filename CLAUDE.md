@@ -4,6 +4,48 @@
 
 ---
 
+## ⚠ ACTIVE WORK (2026-07): futures GP-CTA mining — read `gp_cta/proposal.md` first
+
+The current build effort is **GP-based factor mining on Chinese futures minute
+data** (`Future_minute_data/`, 68 GB), *not* the CSI 300 STL pipeline below.
+The guide for this work is **`gp_cta/proposal.md`** — read it before writing
+any code. Deeper design: `docs/LEADLAG_DESIGN.md`.
+
+**TWO CO-EQUAL TOP PRIORITIES:**
+
+1. **MEMORY SAFETY.** The machine has 16 GB RAM. All code processes data in
+   the smallest possible snippets (one contract file / one product-year / one
+   day folder at a time), stays under ~4 GB peak per stage (enforced by
+   `futures_common.memory.PeakTracker` + the umbrella watchdog), uses Polars
+   lazy scans + float32, writes intermediates to disk, and is tested on
+   1 product × 1 year with measured peak memory before any larger run. Full
+   rules: `gp_cta/proposal.md` § "Memory safety". When in doubt, use a
+   smaller batch. Speed never wins over memory.
+2. **LOOK-AHEAD SAFETY.** No artifact at time t may use information revealed
+   after t: PIT segment-START-anchored roll adjustment, one execution-timing
+   chokepoint (decide t close → fill t+1 open), strictly causal features,
+   as-of edge discipline, and three automated leakage gates
+   (truncation-prefix, +1-bar kill-switch, future-edge injection). Full
+   rules: `gp_cta/proposal.md` § "Look-ahead safety".
+
+**Layout (since 2026-07-13):** `futures_common/` (shared spine),
+`data_fetcher/` (futures data band, local CSVs only — the old AKshare equity
+fetcher is preserved untouched in `data_fetcher_akshare/`), `gp_cta/` (mining
+band), top-level `configs/`. The old A-share GP baseline and the vendored
+`qlib/` clone were deleted 2026-07-13 (git history has them).
+
+**Build status (2026-07-13):** the full framework is built and
+acceptance-verified on the RB/I/TA 2019–2021 slice (proposal build-order
+steps 1–6): ingest → inferred calendar → PIT continuous → panel/features →
+lead-lag scan/validation/edges → warm-start GP with structured backtest +
+full metrics + trial ledger. Band 3 (`gp_cta/gates/`) is a stub by design.
+Package READMEs document each band; `python -m futures_common run --slice
+acceptance --check` drives the whole chain.
+
+Also: edit files directly in this main folder, not in `.claude/worktrees/`.
+
+---
+
 ## What this project is
 
 A four-pipeline auto-mining factory for CSI 300 trading signals. Mining Factory has four independent miners (Pipeline A: STL+MCTS per-asset CTA; B: RL-CTA; C: RL cross-sectional alpha; D: LLM alpha) feeding a shared strategy pool. Estimation Factory has two parallel admission gates (CTA for A∪B; alpha for C∪D) with explicit multiple-testing correction (DSR, BHY haircut, CPCV, monthly CSCV-PBO). v1 builds Pipeline A end-to-end on an M1 16 GB MacBook with **no deep learning**; B/C/D are explicitly v2.
@@ -12,23 +54,30 @@ This file's session covers Phases 0 → 3.6 (Pipeline A baseline, multi-horizon,
 
 ---
 
-## Folder map
+## Folder map (updated 2026-07-13)
 
 ```
-AutoLLM/
-├── proposal_version1.md           ← spec (101 KB; do not modify casually)
-├── CLAUDE_CODE_BUILD_PROMPT.md    ← orchestration prompt for this session
+AutoMiner/
 ├── CLAUDE.md                       ← this file
-├── data_fetcher/                   ← Phase 1 — AKshare→parquet pipeline
-├── alpha158/                       ← Phase 2 — 158 formulas ported from Qlib
-├── STL pipelines/                  ← Phase 3/3.5/3.6 — Pipeline A
-├── signal_miner/                   ← Phase 3.6/4 — shared services (eval, pool, gate, MTC)
-├── qlib/                           ← read-only Github clone, kept ONLY for Alpha158 reference
+├── configs/                        ← shared pipeline configs (defaults.toml, costs.yaml, …)
+├── futures_common/                 ← ACTIVE — shared spine (paths, config, memory, manifest, rng, umbrella CLI)
+├── data_fetcher/                   ← ACTIVE — futures data band L0–L2 (local CSVs, zero network)
+├── gp_cta/                         ← ACTIVE — mining band (proposal.md + leadlag/ + gp/)
+├── docs/                           ← LEADLAG_DESIGN.md (lead-lag math)
+├── Future_minute_data/             ← read-only raw 1-minute futures CSVs (68 GB, git-ignored)
+├── data_fetcher_akshare/           ← dormant — old AKshare A-share fetcher (reference, untouched)
+├── STL pipelines/                  ← dormant — CSI 300 Pipeline A
 └── NLP and LLM automatic signal Miner/
-    └── relative papers/            ← read-only paper PDFs + 3 cloned repos
+    └── relative papers/            ← read-only paper PDFs + cloned repos
 ```
 
-Two folders are **read-only** for this session: `qlib/` and `NLP and LLM automatic signal Miner/`. Do not edit anything inside them, ever (R6).
+Read-only folders: `Future_minute_data/`, `data_fetcher_akshare/`, and
+`NLP and LLM automatic signal Miner/`. Do not edit anything inside them.
+(`qlib/` was deleted 2026-07-13 — nothing used it.)
+
+> **Everything below this line documents the DORMANT CSI 300 effort** (kept as
+> historical record; its conventions still apply where they don't conflict
+> with `gp_cta/proposal.md`).
 
 ---
 

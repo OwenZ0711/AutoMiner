@@ -16,7 +16,7 @@ htmlcov/
 .ipynb_checkpoints/
 
 # Virtual envs — anchored to repo root only (don't match arbitrary `env/` or `venv/`
-# directories deep inside vendored repos like alphagen/rl/env/)
+# directories deep inside vendored repos)
 /.venv/
 /venv/
 /venvs/
@@ -32,19 +32,18 @@ htmlcov/
 /build/
 /dist/
 
-# Qlib local artifacts inside the vendored qlib clone (regenerable; real data
-# lives at ~/.qlib/ outside the repo per CLAUDE.md)
+# MLflow local artifacts (regenerable)
 mlruns/
-qlib/pyqlib.egg-info/
-qlib/build/
 
 # Project-local data (anchored — real data lives at ~/AutoLLM_data/ per CLAUDE.md).
-# NOT a wildcard — leaves `alphagen/data/`, `data_fetcher/`, etc. alone.
 /data/
 /results/
 
+# Raw futures minute data (68 GB, read-only pipeline input — never belongs in git)
+/Future_minute_data/
+
 # Data file blobs at the repo root (not used today; defensive). Test fixtures are
-# whitelisted explicitly so the bundled 5-symbol/100-day parquet still ships.
+# whitelisted explicitly so small checked-in fixtures still ship.
 /*.parquet
 /*.bin
 !data_fetcher/tests/fixtures/**/*.parquet

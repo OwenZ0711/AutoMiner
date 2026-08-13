@@ -1,0 +1,9 @@
+# Daily price-limit (涨跌停) lock detection (trap 7).
+# Heuristic: a bar is limit-locked if it sits in a run of >= min_run_bars
+# consecutive traded bars where close equals the RUNNING (causal) session
+# extreme and the 1-bar return is zero. Optional exact mode per product:
+# close == round_to_tick(prev_settle_proxy * (1 +/- limit_rate)).
+version: 1
+heuristic:
+  min_run_bars: 30
+products: {}   # optional exact rates, e.g. RB: {limit_rate: 0.07}

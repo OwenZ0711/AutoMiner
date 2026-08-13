@@ -1,0 +1,16 @@
+# Session-calendar inference (trap 1: session calendars are time-varying and
+# must be inferred from the data, never hard-coded).
+version: 1
+# Anchor products for the bootstrap trading-day set: chosen to cover
+# 2005 -> 2026 continuously across exchanges. A date is a trading day when
+# >= anchors_required anchors printed day-session bars.
+bootstrap_products: [CU, AL, RU, M, C, TA, CF, SR, RB, IF]
+anchors_required: 3
+# Template inference knobs
+bucket_minutes: 5        # day-cycle bucketed into 5-minute slots, anchored 20:30
+smoothing_days: 15       # trailing majority vote per bucket
+min_run_days: 10         # regime changes must persist; shorter runs merge back
+# Manual escape hatch, applied AFTER inference. Empty by default.
+# - {product: RB, date_start: 2016-05-01, date_end: 2016-05-31,
+#    intervals: [["21:00","23:00"], ["09:00","10:15"], ["10:30","11:30"], ["13:30","15:00"]]}
+overrides: []

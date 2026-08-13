@@ -1,0 +1,19 @@
+# Lead-lag scan + validation knobs (mining band, L3).
+version: 1
+max_lag_bars: 60
+min_joint_bars: 20000
+# Observed AND null asymmetry statistics use this same decimated lag grid.
+lag_grid: [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60]
+null:
+  n_draws: 200
+  monthly_draws: 50   # per-window nulls for the PIT monthly edge history
+  min_shift_days: 5
+fdr:
+  q_family_a: 0.05
+  q_family_b: 0.10
+rolling:
+  window_months: 24
+  step_months: 1
+  stability_lookback: 12
+shortlist:
+  family_b_top_k: 500

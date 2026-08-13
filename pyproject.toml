@@ -1,0 +1,53 @@
+[project]
+name = "autominer-futures"
+version = "0.1.0"
+description = "GP-based factor mining on Chinese futures minute data"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [
+    "data_fetcher_akshare",
+    "NLP and LLM automatic signal Miner",
+    "STL pipelines",
+]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",      # pycodestyle / pyflakes
+    "I",                # isort
+    "UP",               # pyupgrade
+    "B",                # bugbear
+    "NPY",              # numpy rules — NPY002 bans legacy np.random.* (use futures_common.rng)
+    "RUF",
+]
+ignore = [
+    "E501",    # line length is enforced by the formatter
+    "RUF002",  # docstrings use real math glyphs (σ, −, ×) deliberately
+    "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"*/tests/*" = ["NPY002"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["futures_common", "data_fetcher", "gp_cta", "tests"]
+markers = [
+    "realdata: touches Future_minute_data/ (skipped unless --realdata)",
+    "slow: takes more than ~10s",
+    "acceptance: requires the acceptance slice already built under ~/AutoLLM_data/futures",
+    "memory: asserts a peak-RSS budget",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+files = ["futures_common", "data_fetcher", "gp_cta"]
+exclude = "(tests/|data_fetcher_akshare/)"
+
+[[tool.mypy.overrides]]
+module = ["yaml", "yaml.*", "numba", "numba.*", "psutil", "pandas", "pandas.*"]
+ignore_missing_imports = true

@@ -1,0 +1,11 @@
+# Universe construction (L1c): dev-universe candidates, era flags, listings.
+version: 1
+# Candidates for the dev10 slice; final pick = top `dev_size` by trailing ADV.
+dev_candidates: [RB, HC, I, J, JM, CU, AL, ZN, AU, AG, TA, MA, PP, M, Y, P, SR, CF, SC, IF]
+dev_size: 10
+# Era flags applied from config (cross-checked empirically where possible).
+era_overrides:
+  # Trap 8: index-futures restrictions collapsed CFFEX volume ~99%.
+  - {products: [IF, IH, IC], flag: cffex_restricted, date_start: 2015-09-07, date_end: 2017-12-31}
+# Delisted legacy CZCE codes that exist in old folders (trap 9).
+delisted: [WS, WT, GN, ER, RO, ME, TC, RI, PM, JR, LR]

@@ -1,0 +1,30 @@
+# GP band knobs (warm-start engine + backtest), see gp_cta/proposal.md.
+version: 1
+population: 64
+generations: 10
+stagnation: 3            # early stop after N generations without improvement
+tournament_k: 4
+probs: {crossover: 0.5, point: 0.4, copy: 0.1}
+elitism: 1
+windows: [5, 15, 30, 60, 120, 240, 480, 1200]     # bars
+constants: [-2.0, -1.0, -0.5, 0.5, 1.0, 2.0]
+max_leader_rank: 3
+max_depth: 6
+pool:
+  max_abs_corr: 0.7        # AlphaGen-style mutual-correlation gate
+  signal_decimation_bars: 15
+backtest:
+  q_hi: 0.70
+  q_lo: 0.30
+  lookback: 1200           # bars for the rolling-quantile hysteresis bands
+  thr_update_every: 1
+edges_gate:
+  q_max: 0.10
+  min_stability: 0.5
+  max_staleness_days: 45
+fitness:
+  w_maxdd: 0.5
+  w_turnover: 0.05
+  invalid: -10.0
+  min_trades_per_product_year: 20
+  min_time_in_market: 0.02

@@ -1,0 +1,56 @@
+# Per-product trading costs and contract specs.
+#
+# Declared values are cross-checked by the data band's cost verification:
+# multiplier ~ median(amount / (volume * close)) over liquid bars. The ratio is
+# invariant to the 2020 double->single volume-counting switch (amount and
+# volume are counted the same way), but the check runs per-year so anomalies
+# surface. A product absent from `products` gets `defaults` + declared=false;
+# backtests refuse undeclared-and-unverified products.
+#
+# tick_size is in RAW price units (slippage normalization uses raw open).
+version: 1
+defaults:
+  fee_bps_per_side: 1.5      # deliberately conservative; named products override
+  slippage_ticks: 1
+inference:
+  multiplier_rel_tol: 0.05
+  tick_method: mode_of_positive_price_diffs
+  min_bars: 10000
+products:
+  # SHFE
+  RB: {exchange: SHFE, multiplier: 10,   tick_size: 1.0}
+  HC: {exchange: SHFE, multiplier: 10,   tick_size: 1.0}
+  CU: {exchange: SHFE, multiplier: 5,    tick_size: 10.0}
+  AL: {exchange: SHFE, multiplier: 5,    tick_size: 5.0}
+  ZN: {exchange: SHFE, multiplier: 5,    tick_size: 5.0}
+  NI: {exchange: SHFE, multiplier: 1,    tick_size: 10.0}
+  AU: {exchange: SHFE, multiplier: 1000, tick_size: 0.02}
+  AG: {exchange: SHFE, multiplier: 15,   tick_size: 1.0}
+  RU: {exchange: SHFE, multiplier: 10,   tick_size: 5.0}
+  FU: {exchange: SHFE, multiplier: 10,   tick_size: 1.0}
+  BU: {exchange: SHFE, multiplier: 10,   tick_size: 1.0}
+  # DCE
+  I:  {exchange: DCE,  multiplier: 100,  tick_size: 0.5}
+  J:  {exchange: DCE,  multiplier: 100,  tick_size: 0.5}
+  JM: {exchange: DCE,  multiplier: 60,   tick_size: 0.5}
+  M:  {exchange: DCE,  multiplier: 10,   tick_size: 1.0}
+  Y:  {exchange: DCE,  multiplier: 10,   tick_size: 2.0}
+  P:  {exchange: DCE,  multiplier: 10,   tick_size: 2.0}
+  PP: {exchange: DCE,  multiplier: 5,    tick_size: 1.0}
+  L:  {exchange: DCE,  multiplier: 5,    tick_size: 1.0}
+  V:  {exchange: DCE,  multiplier: 5,    tick_size: 5.0}
+  JD: {exchange: DCE,  multiplier: 10,   tick_size: 1.0}
+  A:  {exchange: DCE,  multiplier: 10,   tick_size: 1.0}
+  # CZCE
+  TA: {exchange: CZCE, multiplier: 5,    tick_size: 2.0}
+  MA: {exchange: CZCE, multiplier: 10,   tick_size: 1.0}
+  SR: {exchange: CZCE, multiplier: 10,   tick_size: 1.0}
+  CF: {exchange: CZCE, multiplier: 5,    tick_size: 5.0}
+  OI: {exchange: CZCE, multiplier: 10,   tick_size: 1.0}
+  RM: {exchange: CZCE, multiplier: 10,   tick_size: 1.0}
+  # INE
+  SC: {exchange: INE,  multiplier: 1000, tick_size: 0.1}
+  # CFFEX (fee in bps of notional is genuinely lower; restricted era flagged in universe)
+  IF: {exchange: CFFEX, multiplier: 300, tick_size: 0.2, fee_bps_per_side: 0.5}
+  IH: {exchange: CFFEX, multiplier: 300, tick_size: 0.2, fee_bps_per_side: 0.5}
+  IC: {exchange: CFFEX, multiplier: 200, tick_size: 0.2, fee_bps_per_side: 0.5}
